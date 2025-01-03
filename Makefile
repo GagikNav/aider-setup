@@ -16,10 +16,21 @@ create_env_file:
 
 create_config_file:
 	@echo "Creating $(CONFIG_FILE)"
-	
-	@if [ ! -f $(CONFIG_FILE) ]; then \
+	@read 	-p "Do you want to enable auto-commits? (y/n) " AUTO_COMMITS; \
+	if [ "$$AUTO_COMMITS" = "y" ]; then \
+		echo "auto-commits: true" > $(CONFIG_FILE); \
+	else \
 		echo "auto-commits: false" > $(CONFIG_FILE); \
 	fi
+	
+	@read -p "Do you want to enable dark mode? (y/n) " DARK_MODE; \
+	if [ "$$DARK_MODE" = "y" ]; then \
+		echo "dark-mode: true" >> $(CONFIG_FILE); \
+	else \
+		echo "dark-mode: false" >> $(CONFIG_FILE); \
+	fi
+
+
 
 add_aider_files_to_git_ignore:
 
