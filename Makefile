@@ -1,16 +1,50 @@
-.PHONY: setup_aider run_aider
+.PHONY: setup_aider run_aider create_env_file create_config_file add_aider_files_to_git_ignore clear_aider
+
+# Variables
+VENV_DIR = .aider-env
+ENV_FILE = .env
+CONFIG_FILE = .aider.conf.yml
+GITIGNORE = .gitignore
+GENERAL_AIDER_FILES = .aider*
+PYTHON = python3
+PIP = pip
+PLAYWRIGHT = playwright
+
+create_env_file:
+	@echo "Remember to set your API key in $(ENV_FILE) like so: OPENAI_API_KEY=your api key"
+	@read -n 1 -s -r -p "Press any key to continue" && echo
+
+create_config_file:
+	@echo "Creating $(CONFIG_FILE)"
+	
+	@if [ ! -f $(CONFIG_FILE) ]; then \
+		echo "auto-commits: false" > $(CONFIG_FILE); \
+	fi
+
+add_aider_files_to_git_ignore:
+
+	@if ! grep -qxF $(VENV_DIR) $(GITIGNORE); then \
+		echo $(VENV_DIR) >> $(GITIGNORE); \
+	fi
+	@if ! grep -qxF $(GENERAL_AIDER_FILES) $(GITIGNORE); then \
+		echo $(GENERAL_AIDER_FILES) >> $(GITIGNORE); \
+	fi
 
 setup_aider:
-	@if [ ! -f .env.aider ]; then \
-		echo "OPENAI_API_KEY=your api key" > .env.aider; \
-		@echo "Remember to set your API key"; \
-		@read -n 1 -s -r -p "Press any key to continue"; \
-	fi
-	python3 -m venv .aider-env
-	. .aider-env/bin/activate && pip install aider playwright
-	. .aider-env/bin/activate && playwright install --with-deps chromium
+	@command -v $(PYTHON) >/dev/null 2>&1 || { echo >&2 "$(PYTHON) is not installed. Aborting."; exit 1; }
+	@$(PYTHON) -m venv $(VENV_DIR)
+	@. $(VENV_DIR)/bin/activate && $(PIP) install aider $(PLAYWRIGHT)
+	@. $(VENV_DIR)/bin/activate && $(PLAYWRIGHT) install --with-deps chromium
 
 run_aider:
-	. .aider-env/bin/activate && aider .
+	@read -p "Run aider? (y/n) " ANSWER; \
+	if [ "$$ANSWER" = "y" ]; then \
+	. $(VENV_DIR)/bin/activate && aider .; \
+	else \
+		echo "Skipping..."; \
+	fi
 
-aider: setup_aider run_aider
+aider: add_aider_files_to_git_ignore setup_aider create_env_file create_config_file run_aider
+
+clear_aider:
+	@rm -rf $(VENV_DIR) $(CONFIG_FILE) .aider.chat.history.md .aider.tags.cache.v3 .aider.input.history
